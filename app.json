@@ -23,6 +23,12 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Permettez à l'application d'accéder à votre position pour suivre votre activité de course."
+        }
+      ],
       "expo-router",
       [
         "expo-splash-screen",
