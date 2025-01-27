@@ -1,7 +1,8 @@
-import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, StyleSheet, Pressable, ScrollView, Switch } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { useTheme } from '@/hooks/useTheme';
 
 const menuItems = [
   { icon: '🎯', title: 'Personal parameters', route: '/(tabs)/parameters' },
@@ -11,6 +12,8 @@ const menuItems = [
 ];
 
 export default function ProfileScreen() {
+  const { isDarkMode, toggleTheme } = useTheme();
+
   return (
     <LinearGradient
       colors={['#6B5ECD', '#8B7FE8']}
@@ -85,6 +88,23 @@ export default function ProfileScreen() {
               <ThemedText style={styles.menuChevron}>›</ThemedText>
             </Pressable>
           ))}
+
+          {/* Theme Switch */}
+          <View style={[styles.menuItem, styles.menuItemBorder]}>
+            <View style={styles.menuItemContent}>
+              <View style={styles.menuIconContainer}>
+                <ThemedText style={styles.menuIcon}>{isDarkMode ? '🌙' : '☀️'}</ThemedText>
+              </View>
+              <ThemedText style={styles.menuTitle}>Dark Mode</ThemedText>
+            </View>
+            <Switch
+              value={isDarkMode}
+              onValueChange={toggleTheme}
+              trackColor={{ false: '#767577', true: '#2D7CFF' }}
+              thumbColor={isDarkMode ? '#FFFFFF' : '#f4f3f4'}
+              ios_backgroundColor="#3e3e3e"
+            />
+          </View>
         </View>
 
         {/* Espace pour la barre de navigation */}
@@ -206,7 +226,7 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   menuChevron: {
-    fontSize: 20,
+    fontSize: 16,
     color: '#666',
   },
   menuItemBorder: {

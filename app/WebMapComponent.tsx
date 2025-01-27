@@ -1,19 +1,10 @@
-import { View, StyleSheet } from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
+import React from 'react';
+import { View, Text } from 'react-native';
 
-export const WebMapComponent = () => {
+export default function WebMapComponent() {
   return (
-    <View style={styles.container}>
-      <ThemedText>La carte n'est pas disponible sur le web</ThemedText>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text>Map not available on web</Text>
     </View>
   );
-};
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-  },
-});
+}

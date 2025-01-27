@@ -16,7 +16,8 @@ export default function AllActivitiesScreen() {
         distance: activity.distance,
         calories: activity.calories,
         speed: activity.speed,
-        duration: activity.duration
+        duration: activity.duration,
+        route: JSON.stringify(activity.route),
       }
     });
   };
@@ -45,7 +46,7 @@ export default function AllActivitiesScreen() {
                 <ThemedText style={styles.activityDate}>{activity.date}</ThemedText>
                 <ThemedText style={styles.activityDistance}>{activity.distance} km</ThemedText>
                 <ThemedText style={styles.activityStats}>
-                  {activity.calories} kcal • {activity.speed} km/hr
+                  {activity.calories} kcal • {activity.speed} km/h
                 </ThemedText>
                 <ThemedText style={styles.activityDuration}>{activity.duration}</ThemedText>
               </View>

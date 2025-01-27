@@ -1,224 +1,303 @@
-import { useEffect, useRef } from 'react';
-import { StyleSheet, View, ScrollView, Platform } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { ThemedText } from '@/components/ThemedText';
-import { PROVIDER_GOOGLE } from 'react-native-maps';
-import { useActivities } from '@/hooks/useActivities';
-
-// Importation conditionnelle de react-native-maps
-const MapComponents = Platform.select({
-  native: () => {
-    const RNMaps = require('react-native-maps');
-    return {
-      MapView: RNMaps.default,
-      Polyline: RNMaps.Polyline,
-      Marker: RNMaps.Marker,
-    };
-  },
-  default: () => ({
-    MapView: null,
-    Polyline: null,
-    Marker: null,
-  }),
-})();
-
-export default function ActivityDetailsScreen() {
-  const params = useLocalSearchParams();
-  const mapRef = useRef(null);
-  const activities = useActivities((state) => state.activities);
-  
-  // Trouver l'activité correspondante
-  const activity = activities.find(a => a.id === params.id);
-
-  const MapComponent = () => {
-    if (Platform.OS === 'web' || !MapComponents.MapView || !activity?.route) {
-      return (
-        <View style={styles.mapPlaceholder}>
-          <ThemedText>Carte non disponible</ThemedText>
-        </View>
-      );
-    }
-
-    const { MapView, Polyline, Marker } = MapComponents;
-
-    // Calculer les limites de la carte pour afficher tout le parcours
-    const bounds = activity.route.reduce(
-      (acc, point) => ({
-        minLat: Math.min(acc.minLat, point.latitude),
-        maxLat: Math.max(acc.maxLat, point.latitude),
-        minLng: Math.min(acc.minLng, point.longitude),
-        maxLng: Math.max(acc.maxLng, point.longitude),
-      }),
-      {
-        minLat: Infinity,
-        maxLat: -Infinity,
-        minLng: Infinity,
-        maxLng: -Infinity,
-      }
-    );
-
-    const region = {
-      latitude: (bounds.maxLat + bounds.minLat) / 2,
-      longitude: (bounds.maxLng + bounds.minLng) / 2,
-      latitudeDelta: (bounds.maxLat - bounds.minLat) * 1.2,
-      longitudeDelta: (bounds.maxLng - bounds.minLng) * 1.2,
-    };
-
-    return (
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        provider={PROVIDER_GOOGLE}
-        initialRegion={region}
-      >
-        <Polyline
-          coordinates={activity.route}
-          strokeColor="#6B5ECD"
-          strokeWidth={3}
-          lineDashPattern={[0]}
-        />
-        <Marker
-          coordinate={activity.route[0]}
-          title="Start"
-          pinColor="green"
-        />
-        <Marker
-          coordinate={activity.route[activity.route.length - 1]}
-          title="Finish"
-          pinColor="red"
-        />
-      </MapView>
-    );
-  };
-
-  if (!activity) {
-    return (
-      <View style={styles.container}>
-        <ThemedText>Activité non trouvée</ThemedText>
-      </View>
-    );
-  }
-
-  return (
-    <ScrollView style={styles.container}>
-      <LinearGradient
-        colors={['#6B5ECD', '#8B7FE8']}
-        style={styles.header}
-      >
-        <ThemedText style={styles.date}>{activity.date}</ThemedText>
-        <View style={styles.mainStats}>
-          <ThemedText style={styles.distance}>{activity.distance} km</ThemedText>
-          <ThemedText style={styles.duration}>{activity.duration}</ThemedText>
-        </View>
-      </LinearGradient>
-
-      <View style={styles.mapContainer}>
-        <MapComponent />
-      </View>
-
-      <View style={styles.statsGrid}>
-        <View style={styles.statCard}>
-          <ThemedText style={styles.statValue}>{activity.calories}</ThemedText>
-          <ThemedText style={styles.statLabel}>Calories</ThemedText>
-        </View>
-        <View style={styles.statCard}>
-          <ThemedText style={styles.statValue}>{activity.speed}</ThemedText>
-          <ThemedText style={styles.statLabel}>Avg Speed (km/h)</ThemedText>
-        </View>
-        {activity.stats && (
-          <>
-            <View style={styles.statCard}>
-              <ThemedText style={styles.statValue}>
-                {(activity.stats.maxSpeed || 0).toFixed(1)}
-              </ThemedText>
-              <ThemedText style={styles.statLabel}>Max Speed (km/h)</ThemedText>
-            </View>
-            <View style={styles.statCard}>
-              <ThemedText style={styles.statValue}>
-                {activity.stats.elevationGain || 0}
-              </ThemedText>
-              <ThemedText style={styles.statLabel}>Elevation (m)</ThemedText>
-            </View>
-          </>
-        )}
-      </View>
-    </ScrollView>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  header: {
-    padding: 20,
-    paddingTop: 60,
-  },
-  date: {
-    color: 'white',
-    fontSize: 16,
-    opacity: 0.8,
-  },
-  mainStats: {
-    marginTop: 10,
-  },
-  distance: {
-    color: 'white',
-    fontSize: 32,
-    fontWeight: 'bold',
-  },
-  duration: {
-    color: 'white',
-    fontSize: 20,
-    marginTop: 5,
-  },
-  mapContainer: {
-    height: 300,
-    margin: 20,
-    borderRadius: 15,
-    overflow: 'hidden',
-    backgroundColor: 'white',
-  },
-  map: {
-    flex: 1,
-  },
-  mapPlaceholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: 10,
-    justifyContent: 'space-between',
-  },
-  statCard: {
-    backgroundColor: 'white',
-    borderRadius: 15,
-    padding: 15,
-    width: '48%',
-    marginBottom: 15,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#6B5ECD',
-  },
-  statLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 5,
-  },
-}); 
-
-
-
-
-
-
-
+import React, { useState } from 'react';
+import { StyleSheet, View, ScrollView, Platform, Pressable, Modal } from 'react-native';
+import { useLocalSearchParams, router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ThemedText } from '@/components/ThemedText';
+import WebMapComponent from '@/app/WebMapComponent';
+import { PROVIDER_GOOGLE } from 'react-native-maps';
+import { useBadges } from '@/hooks/useBadges';
+import RouteMap from '@/components/RouteMap';
+import { Ionicons } from '@expo/vector-icons';
+import { useActivities } from '@/hooks/useActivities';
+
+// Importation conditionnelle de react-native-maps
+const MapView = Platform.select({
+  native: () => require('react-native-maps').default,
+  default: () => null,
+})();
+
+const Polyline = Platform.select({
+  native: () => require('react-native-maps').Polyline,
+  default: () => null,
+})();
+
+const Marker = Platform.select({
+  native: () => require('react-native-maps').Marker,
+  default: () => null,
+})();
+
+export default function ActivityDetailsScreen() {
+  const params = useLocalSearchParams();
+  const activities = useActivities((state) => state.activities);
+  const { unlockedBadges } = useBadges();
+  
+  // Récupérer l'activité soit depuis le store (pour les badges), soit depuis les paramètres
+  const activity = React.useMemo(() => {
+    // Si on vient des badges (on a juste l'ID), chercher l'activité complète dans le store
+    if (params.id && !params.route) {
+      const foundActivity = activities.find(a => a.id === params.id);
+      if (foundActivity) {
+        return foundActivity;
+      }
+    }
+    
+    // Sinon utiliser les paramètres (venant de la liste des activités)
+    return {
+      id: params.id as string,
+      date: params.date as string,
+      distance: params.distance as string,
+      duration: params.duration as string,
+      calories: Number(params.calories),
+      speed: params.speed as string,
+      route: params.route ? JSON.parse(params.route as string) : [],
+    };
+  }, [params, activities]);
+
+  // Récupérer les badges débloqués pour cette activité
+  const activityBadges = React.useMemo(() => {
+    return unlockedBadges.filter(badge => badge.activityId === activity.id);
+  }, [unlockedBadges, activity.id]);
+
+  // Vérifier si la route est valide
+  const hasValidRoute = Array.isArray(activity.route) && activity.route.length > 0 &&
+    activity.route.every(point => 
+      typeof point === 'object' && 
+      typeof point.latitude === 'number' && 
+      typeof point.longitude === 'number'
+    );
+
+  return (
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.headerContainer}>
+          <Pressable
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="chevron-back" size={28} color="white" />
+          </Pressable>
+          <ThemedText style={styles.headerTitle}>Activity Details</ThemedText>
+        </View>
+
+        <LinearGradient colors={['#6B5ECD', '#8B7FE8']} style={styles.card}>
+          <ThemedText style={styles.title}>{activity.date}</ThemedText>
+          
+          {hasValidRoute && <RouteMap route={activity.route} height={200} />}
+          
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <ThemedText style={styles.statValue}>{activity.distance}</ThemedText>
+              <ThemedText style={styles.statLabel}>km</ThemedText>
+            </View>
+            <View style={styles.statItem}>
+              <ThemedText style={styles.statValue}>{activity.duration}</ThemedText>
+              <ThemedText style={styles.statLabel}>duration</ThemedText>
+            </View>
+            <View style={styles.statItem}>
+              <ThemedText style={styles.statValue}>{activity.calories}</ThemedText>
+              <ThemedText style={styles.statLabel}>kcal</ThemedText>
+            </View>
+            <View style={styles.statItem}>
+              <ThemedText style={styles.statValue}>{activity.speed}</ThemedText>
+              <ThemedText style={styles.statLabel}>km/h</ThemedText>
+            </View>
+          </View>
+
+          {activityBadges.length > 0 && (
+            <View style={styles.badgesSection}>
+              <ThemedText style={styles.badgesTitle}>Badges Earned</ThemedText>
+              <View style={styles.badgesContainer}>
+                {activityBadges.map((badge) => (
+                  <View key={badge.id} style={styles.badgeItem}>
+                    <ThemedText style={styles.badgeIcon}>{badge.icon}</ThemedText>
+                    <ThemedText style={styles.badgeName}>{badge.name}</ThemedText>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+        </LinearGradient>
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0A0A0A',
+  },
+  scrollContent: {
+    paddingTop: Platform.OS === 'ios' ? 50 : 30,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 8,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'white',
+    marginLeft: 12,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(25, 25, 35, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  card: {
+    margin: 16,
+    marginTop: 8,
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    elevation: 8,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 16,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  statLabel: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  badgesSection: {
+    marginTop: 24,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    paddingTop: 16,
+  },
+  badgesTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 12,
+  },
+  badgesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  badgeItem: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    minWidth: 90,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  badgeIcon: {
+    fontSize: 32,
+    marginBottom: 8,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  badgeName: {
+    fontSize: 12,
+    color: 'white',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#1A1A1A',
+    borderRadius: 20,
+    padding: 24,
+    width: '80%',
+    alignItems: 'center',
+  },
+  modalIcon: {
+    fontSize: 64,
+    marginBottom: 20,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  modalDescription: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  modalDate: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.6)',
+    marginBottom: 24,
+  },
+  modalCloseButton: {
+    backgroundColor: '#2D7CFF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  modalCloseText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+}); 
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,187 +1,194 @@
-import { View, ScrollView, StyleSheet, Pressable } from 'react-native';
+import React from 'react';
+import { View, StyleSheet, Pressable, ScrollView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from '@/components/ThemedText';
+import { useBadges, AVAILABLE_BADGES } from '@/hooks/useBadges';
+import { router } from 'expo-router';
 
 export default function AchievementsScreen() {
+  const { unlockedBadges } = useBadges();
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const handleBadgePress = (badge: any) => {
+    if (badge.activityId) {
+      router.push({
+        pathname: '/activity-details',
+        params: { id: badge.activityId }
+      });
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      <LinearGradient
-        colors={['#6B5ECD', '#8B7FE8']}
-        style={styles.gradient}
-      >
-        <ScrollView style={styles.scrollView}>
-          {/* En-tête */}
-          <View style={styles.header}>
-            <ThemedText style={styles.headerTitle}>Mes Réalisations</ThemedText>
-            <ThemedText style={styles.statsText}>12 réalisations débloquées</ThemedText>
-          </View>
-
-          {/* Section Dernière Course */}
-          <View style={styles.lastRunCard}>
-            <ThemedText style={styles.cardTitle}>Dernière Course</ThemedText>
-            <View style={styles.runStats}>
-              <View style={styles.statItem}>
-                <ThemedText style={styles.statValue}>10.5</ThemedText>
-                <ThemedText style={styles.statLabel}>km</ThemedText>
-              </View>
-              <View style={styles.statItem}>
-                <ThemedText style={styles.statValue}>52:30</ThemedText>
-                <ThemedText style={styles.statLabel}>temps</ThemedText>
-              </View>
-              <View style={styles.statItem}>
-                <ThemedText style={styles.statValue}>5'00"</ThemedText>
-                <ThemedText style={styles.statLabel}>min/km</ThemedText>
-              </View>
-            </View>
-          </View>
-
-          {/* Section Badges */}
-          <View style={styles.badgesSection}>
-            <ThemedText style={styles.sectionTitle}>Badges</ThemedText>
-            <View style={styles.badgesGrid}>
-              {[...Array(6)].map((_, index) => (
-                <Pressable 
-                  key={index}
-                  style={styles.badgeItem}
-                >
-                  <View style={styles.badge} />
-                  <ThemedText style={styles.badgeTitle}>
-                    {index === 0 ? "Premier 5K" : index === 1 ? "Course Matinale" : "???"}
-                  </ThemedText>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-
-          {/* Section Records */}
-          <View style={styles.recordsSection}>
-            <ThemedText style={styles.sectionTitle}>Records Personnels</ThemedText>
-            <View style={styles.recordsList}>
-              {[
-                { title: "Plus longue distance", value: "15.3 km" },
-                { title: "Meilleur temps 5K", value: "25:30" },
-                { title: "Plus longue série", value: "7 jours" },
-              ].map((record, index) => (
-                <View key={index} style={styles.recordItem}>
-                  <ThemedText style={styles.recordTitle}>{record.title}</ThemedText>
-                  <ThemedText style={styles.recordValue}>{record.value}</ThemedText>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          <View style={{ height: 104 }} />
-        </ScrollView>
+    <ScrollView style={styles.container}>
+      <LinearGradient colors={['#6B5ECD', '#8B7FE8']} style={styles.header}>
+        <ThemedText style={styles.headerTitle}>Achievements</ThemedText>
+        <ThemedText style={styles.headerSubtitle}>
+          {unlockedBadges.length} / {AVAILABLE_BADGES.length} badges unlocked
+        </ThemedText>
       </LinearGradient>
-    </View>
+
+      <View style={styles.badgesGrid}>
+        {AVAILABLE_BADGES.map((badge) => {
+          const unlockedBadge = unlockedBadges.find(b => b.id === badge.id);
+          const isUnlocked = !!unlockedBadge;
+
+          return (
+            <Pressable
+              key={badge.id}
+              style={[styles.badgeCard, !isUnlocked && styles.badgeCardLocked]}
+              onPress={() => isUnlocked && handleBadgePress(unlockedBadge)}
+              disabled={!isUnlocked}
+            >
+              <LinearGradient
+                colors={isUnlocked ? ['#2D7CFF', '#5E9FFF'] : ['#3A3A3A', '#4A4A4A']}
+                style={styles.badgeContent}
+              >
+                <ThemedText style={styles.badgeIcon}>{badge.icon}</ThemedText>
+                <ThemedText style={styles.badgeName}>{badge.name}</ThemedText>
+                <ThemedText style={styles.badgeDescription}>{badge.description}</ThemedText>
+                {isUnlocked && (
+                  <View style={styles.unlockedInfo}>
+                    <View style={styles.dateContainer}>
+                      <ThemedText style={styles.dateIcon}>🏆</ThemedText>
+                      <ThemedText style={styles.unlockedDate}>
+                        {formatDate(unlockedBadge.unlockedAt || '')}
+                      </ThemedText>
+                    </View>
+                    <View style={styles.tapContainer}>
+                      <ThemedText style={styles.tapIcon}>👆</ThemedText>
+                      <ThemedText style={styles.tapInfo}>View activity details</ThemedText>
+                    </View>
+                  </View>
+                )}
+              </LinearGradient>
+            </Pressable>
+          );
+        })}
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  gradient: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-    padding: 20,
+    backgroundColor: '#0A0A0A',
   },
   header: {
-    marginTop: 40,
-    marginBottom: 20,
+    padding: 24,
+    paddingTop: Platform.OS === 'ios' ? 60 : 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: 'white',
-  },
-  statsText: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginTop: 4,
-  },
-  lastRunCard: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 15,
-  },
-  runStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#6B5ECD',
-  },
-  statLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  badgesSection: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 15,
-  },
-  badgesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 15,
-  },
-  badgeItem: {
-    width: '30%',
-    alignItems: 'center',
-  },
-  badge: {
-    width: 80,
-    height: 80,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 40,
     marginBottom: 8,
   },
-  badgeTitle: {
-    fontSize: 12,
-    color: 'white',
-    textAlign: 'center',
+  headerSubtitle: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
   },
-  recordsSection: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 20,
-  },
-  recordsList: {
-    gap: 15,
-  },
-  recordItem: {
+  badgesGrid: {
+    padding: 16,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  badgeCard: {
+    width: '45%',
+    minHeight: 220,
+    borderRadius: 20,
+    overflow: 'hidden',
+    margin: '2%',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  badgeCardLocked: {
+    opacity: 0.6,
+  },
+  badgeContent: {
+    flex: 1,
+    padding: 12,
+    justifyContent: 'flex-start',
     alignItems: 'center',
   },
-  recordTitle: {
-    fontSize: 16,
-    color: '#000',
+  badgeIcon: {
+    fontSize: 40,
+    height: 50,
+    lineHeight: 50,
+    textAlignVertical: 'center',
+    includeFontPadding: false,
+    marginBottom: 8,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
-  recordValue: {
-    fontSize: 16,
+  badgeName: {
+    fontSize: 15,
     fontWeight: 'bold',
-    color: '#6B5ECD',
+    color: 'white',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  badgeDescription: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+    marginBottom: 8,
+    lineHeight: 16,
+  },
+  unlockedInfo: {
+    marginTop: 'auto',
+    width: '100%',
+    paddingHorizontal: 8,
+  },
+  dateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1A1A1A',
+    padding: 6,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    marginBottom: 6,
+  },
+  dateIcon: {
+    fontSize: 12,
+    color: '#FFD700',
+    marginRight: 4,
+  },
+  unlockedDate: {
+    fontSize: 11,
+    color: 'white',
+    fontWeight: '500',
+  },
+  tapContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2D7CFF',
+    padding: 6,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    justifyContent: 'center',
+  },
+  tapInfo: {
+    fontSize: 11,
+    color: 'white',
+    fontWeight: '600',
+  },
+  tapIcon: {
+    fontSize: 12,
+    color: 'white',
+    marginRight: 4,
   },
 });

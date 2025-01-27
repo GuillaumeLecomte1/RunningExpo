@@ -1,90 +1,55 @@
 import { Tabs } from 'expo-router';
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import { BlurView } from 'expo-blur';
+import { Text } from 'react-native';
+import { useCurrentActivity } from '@/hooks/useCurrentActivity';
 
 export default function TabLayout() {
+  const { isActive } = useCurrentActivity();
+
+  const renderIcon = (emoji: string) => {
+    return (
+      <Text style={{ fontSize: 24, textAlign: 'center' }}>{emoji}</Text>
+    );
+  };
+
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#6B5ECD',
-        tabBarInactiveTintColor: '#A8A8A8',
-        headerShown: false,
-        tabBarBackground: () => (
-          <View style={styles.tabBarContainer}>
-            <BlurView intensity={80} tint="light" style={styles.blur}>
-              <View style={styles.tabBarBackground} />
-            </BlurView>
-          </View>
-        ),
+        headerShown: true,
         tabBarStyle: {
-          position: 'absolute',
-          bottom: 34,
-          left: 20,
-          right: 20,
           height: 60,
-          backgroundColor: 'transparent',
-          borderTopWidth: 0,
-          elevation: 0,
-          borderRadius: 15,
-          marginHorizontal: 20,
+          paddingBottom: 10,
         },
-        tabBarItemStyle: {
-          paddingTop: 12,
-          paddingBottom: 12,
-        },
-        tabBarLabelStyle: {
-          display: 'none',
-        },
-      }}>
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={22} name="list.bullet.fill" color={color} />
-          ),
+          title: 'Home',
+          tabBarIcon: () => renderIcon('🏠'),
         }}
       />
       <Tabs.Screen
         name="achievements"
         options={{
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={22} name="trophy.fill" color={color} />
-          ),
+          title: 'Achievements',
+          headerShown: true,
+          tabBarIcon: () => renderIcon('🏆'),
         }}
       />
       <Tabs.Screen
         name="messages"
         options={{
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={22} name="envelope.fill" color={color} />
-          ),
+          title: 'Messages',
+          tabBarIcon: () => renderIcon('✉️'),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={22} name="person.fill" color={color} />
-          ),
+          title: 'Profile',
+          tabBarIcon: () => renderIcon('👤'),
         }}
       />
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  tabBarContainer: {
-    flex: 1,
-    overflow: 'hidden',
-    borderRadius: 15,
-  },
-  blur: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-  },
-  tabBarBackground: {
-    flex: 1,
-  },
-});
